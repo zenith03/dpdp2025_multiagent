@@ -1,0 +1,116 @@
+# Copyright © 2025-2026 Cognizant Technology Solutions Corp, www.cognizant.com.
+{
+    include "registries/aaosa_basic.hocon",
+    include "registries/expertise_scoping_instructions.hocon",
+
+    "metadata": {
+        "description": "A multi-agent DPDP 2025 compliance auditing network. Scrapes privacy policies, extracts verbatim clauses, and grades them strictly against the DPDP Act.",
+        "tags": ["dpdp", "compliance", "legal-audit", "AAOSA", "gemini"],
+        "sample_queries": [
+            "Audit the privacy policy at https://example.com/privacy for DPDP 2025 compliance.",
+            "Run a compliance check on this privacy text..."
+        ]
+    },
+
+    "tools": [
+        {
+            "name": "DPDPAuditor",
+            "function": {
+                "description": """
+I orchestrate DPDP 2025 privacy policy compliance audits. 
+Provide me with a URL or raw privacy policy text to begin the evaluation.
+"""
+            },
+            "llm_config": {
+                "class": "gemini",
+                "model_name": "gemini-1.5-flash"
+            },
+            "instructions": ${expertise_scoping_instructions} """
+You are the Lead DPDP Compliance Auditor. Route the workflow strictly as follows:
+1. If the user provides a URL, call 'WebIngestionAgent' to fetch the text.
+2. Pass the full policy text to 'AI_Paralegal_Extractor' to find verbatim quotes matching DPDP 2025 rules.
+3. Pass those extracted quotes to 'Statutory_Evaluator' to grade them (Compliant, Needs Improvement, Action Required).
+4. Finally, pass the graded results to 'Report_Synthesizer' to calculate the final percentage score and output the final audit report.
+Do not skip any steps. Provide the final synthesized report to the user.
+""" ${aaosa_instructions},
+            "tools": [
+                { "name": "WebIngestionAgent", "next_steps": ["AI_Paralegal_Extractor"] },
+                { "name": "AI_Paralegal_Extractor", "next_steps": ["Statutory_Evaluator"] },
+                { "name": "Statutory_Evaluator", "next_steps": ["Report_Synthesizer"] },
+                "Report_Synthesizer"
+            ]
+        },
+        {
+            "name": "WebIngestionAgent",
+            "function": ${aaosa_call}{
+                "description": "Fetches and extracts raw text from a provided privacy policy URL."
+            },
+            "llm_config": {
+                "class": "gemini",
+                "model_name": "gemini-1.5-flash"
+            },
+            "instructions": """
+Your name is WebIngestionAgent. When given a URL, use your web browsing capabilities to read the page and return the raw, unformatted text of the privacy policy. Strip out all HTML, scripts, and styling.
+""" ${aaosa_instructions}
+        },
+        {
+            "name": "AI_Paralegal_Extractor",
+            "function": ${aaosa_call}{
+                "description": "Extracts verbatim quotes mapped to DPDP Rules 3(b), 3(c), 6, 7, 8, 9, 10, 11, 13, 14, and 15."
+            },
+            "llm_config": {
+                "class": "gemini",
+                "model_name": "gemini-1.5-flash"
+            },
+            "instructions": """
+Your name is AI_Paralegal_Extractor. Read the provided policy text and extract EXACT verbatim quotes for DPDP 2025 Rules. DO NOT PARAPHRASE.
+- Rule 3(b): Data mapped to Purpose.
+- Rule 3(c): Withdrawal of consent.
+- Rule 6: Security safeguards.
+- Rule 7: 72-hour breach notification.
+- Rule 8: Erasure and retention limits.
+- Rule 9: DPO Contact information.
+- Rule 10: Children's data.
+- Rule 14: Grievance timeline (90 days).
+- Rule 15: Cross-border transfer.
+If a rule is not mentioned, explicitly output "None found" for that rule. Return the results as a clean list.
+""" ${aaosa_instructions}
+        },
+        {
+            "name": "Statutory_Evaluator",
+            "function": ${aaosa_call}{
+                "description": "Grades extracted privacy clauses against strict statutory thresholds."
+            },
+            "llm_config": {
+                "class": "gemini",
+                "model_name": "gemini-1.5-flash"
+            },
+            "instructions": """
+Your name is Statutory_Evaluator. Review the verbatim quotes provided by the Paralegal. Grade each rule precisely:
+- 'Compliant' if it strictly meets the law (e.g., explicitly mentions 72 hours for breaches).
+- 'Needs Improvement' if it is vague.
+- 'Action Required' if it is missing or says 'None found'.
+Provide a brief statutory reasoning and a suggested remediation clause for any failures.
+""" ${aaosa_instructions}
+        },
+        {
+            "name": "Report_Synthesizer",
+            "function": ${aaosa_call}{
+                "description": "Calculates the final percentage score and formats the final consumer report."
+            },
+            "llm_config": {
+                "class": "gemini",
+                "model_name": "gemini-1.5-flash"
+            },
+            "instructions": """
+Your name is Report_Synthesizer. Receive the graded rules. 
+Assign points: Compliant = 3, Needs Improvement = 1.5, Action Required = 0.
+Calculate the final percentage score out of the applicable total.
+Output a highly structured Markdown report featuring:
+1. Final Score (%)
+2. Global Verdict (e.g., "High Alignment", "Action Required")
+3. A summary table of Rules, Status, and Recommended Fixes.
+""" ${aaosa_instructions}
+        }
+    ]
+}
