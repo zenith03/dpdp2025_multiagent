@@ -3,7 +3,7 @@
 ## Overview
 This project is a multi-agent AI framework designed to automatically audit privacy policies for readiness against India's **Digital Personal Data Protection Act (DPDPA), 2023** and the **DPDP Rules, 2025**. 
 
-Built on the Neuro SAN Studio framework, this system utilizes a 5-agent pipeline powered by `gemini-1.5-flash` to ingest policy URLs, extract exact verbatim evidence, evaluate statutory compliance, and synthesize an auditable remediation report.
+Built on the Neuro SAN Studio framework, this system utilizes a 5-agent pipeline powered by `gemini-3.7-flash` to ingest policy URLs, extract exact verbatim evidence, evaluate statutory compliance, and synthesize an auditable remediation report.
 
 ## Note to Evaluators
 My core architectural work, multi-agent orchestration, and legal prompt engineering for this capstone can be found exclusively in:
